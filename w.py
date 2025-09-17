@@ -98,11 +98,16 @@ if "editing_record_id" not in st.session_state:
     st.session_state.editing_record_id = None
 
 def login_action(username, password):
+    """
+    Handles the login logic, including validation and state management.
+    """
     if verify_user(username, password):
         st.session_state.logged_in = True
         st.session_state.username = username
         st.session_state.editing_record_id = None
         st.success(f"Καλωσήρθες, {username}!")
+        time.sleep(1) # Gives the user a moment to see the message
+        st.experimental_rerun()
     else:
         st.error("Λανθασμένος χρήστης ή κωδικός.")
 

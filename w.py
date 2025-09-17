@@ -161,7 +161,7 @@ def main_app():
     left, right = st.columns([4,6])
 
     with left:
-    st.subheader("Φόρμα Εγγραφής")
+        st.subheader("Φόρμα Εγγραφής")
 
     # Use session state to manage form inputs
     if "form_values" not in st.session_state:

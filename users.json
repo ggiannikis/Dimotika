@@ -2,8 +2,8 @@
     "giannis": {
       "password_hash": "2918468f753b4258fba15ebda1e33c67d6d154346e5ba40a38ff651d68c75c39",
       "file": "students_giannis.json",
-      "school_code": "SCH001",
-      "school_name": "1st Primary School Athens"
+      "school_code": "001ΚΑΛ",
+      "school_name": "1ο Δημοτικό Σχολείο Καλαμαριάς"
     },
     "maria": {
       "password_hash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd1c0b2f5e1a2f7b498",

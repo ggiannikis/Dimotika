@@ -18,8 +18,8 @@ READONLY_DATA_DIR = os.path.join(BASE_DIR, "data")
 
 # Preferred writable directory (Streamlit Cloud allows writing to /tmp)
 TMP_DIR = "/tmp"
-WRITE_DATA_DIR = os.path.join(TMP_DIR, "data") if os.access(TMP_DIR, os.W_OK) else READONLY_DATA_DIR
-
+# Use the specified writable directory for data storage
+WRITE_DATA_DIR = "/data"
 # App resources (read-only assets live next to the script)
 USERS_FILE = os.path.join(BASE_DIR, "users.json")            # contains users -> password_hash, file, school_code, school_name
 ADDRESSES_FILE = os.path.join(BASE_DIR, "addresses.xlsx")    # shared (same as your desktop app)

@@ -165,17 +165,22 @@ def main_app():
         notes = st.text_area("Παρατηρήσεις", height=120)
 
         st.markdown("**Διεύθυνση**")
+
         postal_code = st.selectbox("ΤΚ", [""] + postal_codes, index=0)
+
         possible_streets = []
+        city_default = ""
         if postal_code:
-            possible_streets = sorted(addresses_df[addresses_df["Τ.Κ."] == postal_code]["ΟΔΟΣ"].dropna().unique().tolist())
+            subset = addresses_df[addresses_df["Τ.Κ."] == postal_code]
+            possible_streets = sorted(subset["ΟΔΟΣ"].dropna().unique().tolist())
+            cities = subset["ΠΟΛΗ"].dropna().unique()
+            if len(cities):
+                city_default = cities[0]
+
         street = st.selectbox("Οδός", [""] + possible_streets, index=0)
         street_number = st.text_input("Αριθμός Οδού")
-        city = ""
-        if postal_code:
-            city = addresses_df[addresses_df["Τ.Κ."] == postal_code]["ΠΟΛΗ"].dropna().unique()
-            city = city[0] if len(city) else ""
-        city = st.text_input("Πόλη / Περιοχή", value=city)
+        city = st.text_input("Πόλη / Περιοχή", value=city_default)
+
 
         if st.button("Αποθήκευση Εγγραφής"):
             required = [registry_number, last_name, first_name, father_name, street, street_number, postal_code, city]

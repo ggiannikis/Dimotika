@@ -137,11 +137,10 @@ def login_action(username, password):
         st.session_state.username = username
         st.session_state.editing_record_id = None
         st.success(f"Καλωσήρθες, {username}!")
-        # Rerun to clear form after login
-        st.experimental_rerun()
+        # Rerun is no longer needed here. The app will naturally reload and show the main app
+        # because st.session_state.logged_in is now True.
     else:
         st.error("Λανθασμένος χρήστης ή κωδικός.")
-
 def logout_action():
     st.session_state.logged_in = False
     st.session_state.username = None

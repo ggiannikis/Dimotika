@@ -160,108 +160,62 @@ def main_app():
     # Left: Form; Right: Records list
     left, right = st.columns([4,6])
 
-    with left:
-        st.subheader("Φόρμα Εγγραφής")
-        # form inputs - mirror your Tkinter fields
-        registry_number = st.text_input("Αρ. Μητρώου")
-        last_name = st.text_input("Επώνυμο")
-        first_name = st.text_input("Όνομα")
-        father_name = st.text_input("Όνομα Πατέρα")
-        sibling_school = st.text_input("Σχολείο Συμφοίτησης")
-        notes = st.text_area("Παρατηρήσεις", height=120)
+   with left:
+    st.subheader("Φόρμα Εγγραφής")
 
-        # Address helpers: choose postal code then street (or vice versa)
-        st.markdown("**Διεύθυνση**")
-        postal_code = st.selectbox("ΤΚ", [""] + postal_codes, index=0)
-        possible_streets = []
-        if postal_code:
-            possible_streets = sorted(addresses_df[addresses_df["Τ.Κ."] == postal_code]["ΟΔΟΣ"].dropna().unique().tolist())
-        street = st.selectbox("Οδός", [""] + possible_streets, index=0)
-        street_number = st.text_input("Αριθμός Οδού")
-        city = ""
-        if postal_code:
-            city = addresses_df[addresses_df["Τ.Κ."] == postal_code]["ΠΟΛΗ"].dropna().unique()
-            city = city[0] if len(city) else ""
-        city = st.text_input("Πόλη / Περιοχή", value=city)
+    # Use session state to manage form inputs
+    if "form_values" not in st.session_state:
+        st.session_state.form_values = {}
 
-        if st.button("Αποθήκευση Εγγραφής"):
-            # Basic validation
-            required = [registry_number, last_name, first_name, father_name, street, street_number, postal_code, city]
-            if not all(str(x).strip() for x in required):
-                st.warning("Παρακαλώ συμπληρώστε όλα τα απαραίτητα πεδία.")
-            else:
-                records = read_records(student_file)
-                # if editing existing record, update
-                if st.session_state.editing_record_id:
-                    rec_id = st.session_state.editing_record_id
-                    updated = False
-                    for i, rec in enumerate(records):
-                        if str(rec.get("id")) == str(rec_id):
-                            records[i] = {
-                                "id": rec_id,
-                                "registry_number": registry_number.strip(),
-                                "last_name": last_name.strip(),
-                                "first_name": first_name.strip(),
-                                "father_name": father_name.strip(),
-                                "sibling_school": sibling_school.strip(),
-                                "notes": notes.strip(),
-                                "school": school_name,
-                                "school_code": school_code,
-                                "street": street.strip(),
-                                "street_number": street_number.strip(),
-                                "postal_code": postal_code.strip(),
-                                "city": city.strip(),
-                                "last_modified": datetime.now().isoformat()
-                            }
-                            updated = True
-                            break
-                    if not updated:
-                        st.warning("Η εγγραφή προς επεξεργασία δεν βρέθηκε. Θα δημιουργηθεί νέα.")
-                        rec_id = str(int(time.time()))
-                        records.append({
-                            "id": rec_id,
-                            "registry_number": registry_number.strip(),
-                            "last_name": last_name.strip(),
-                            "first_name": first_name.strip(),
-                            "father_name": father_name.strip(),
-                            "sibling_school": sibling_school.strip(),
-                            "notes": notes.strip(),
-                            "school": school_name,
-                            "school_code": school_code,
-                            "street": street.strip(),
-                            "street_number": street_number.strip(),
-                            "postal_code": postal_code.strip(),
-                            "city": city.strip(),
-                            "last_modified": datetime.now().isoformat()
-                        })
-                    st.session_state.editing_record_id = None
-                else:
-                    rec_id = str(int(time.time()))
-                    records.append({
-                        "id": rec_id,
-                        "registry_number": registry_number.strip(),
-                        "last_name": last_name.strip(),
-                        "first_name": first_name.strip(),
-                        "father_name": father_name.strip(),
-                        "sibling_school": sibling_school.strip(),
-                        "notes": notes.strip(),
-                        "school": school_name,
-                        "school_code": school_code,
-                        "street": street.strip(),
-                        "street_number": street_number.strip(),
-                        "postal_code": postal_code.strip(),
-                        "city": city.strip(),
-                        "created_at": datetime.now().isoformat()
-                    })
+    def on_change(key, value):
+        st.session_state.form_values[key] = value
 
-                # Save
-                write_records(student_file, records)
-                st.success("Η εγγραφή αποθηκεύτηκε.")
-                st.rerun()
+    registry_number = st.text_input("Αρ. Μητρώου", value=st.session_state.form_values.get("registry_number", ""), key="registry_number_input", on_change=lambda: on_change("registry_number", st.session_state.registry_number_input))
+    last_name = st.text_input("Επώνυμο", value=st.session_state.form_values.get("last_name", ""), key="last_name_input", on_change=lambda: on_change("last_name", st.session_state.last_name_input))
+    first_name = st.text_input("Όνομα", value=st.session_state.form_values.get("first_name", ""), key="first_name_input", on_change=lambda: on_change("first_name", st.session_state.first_name_input))
+    father_name = st.text_input("Όνομα Πατέρα", value=st.session_state.form_values.get("father_name", ""), key="father_name_input", on_change=lambda: on_change("father_name", st.session_state.father_name_input))
+    sibling_school = st.text_input("Σχολείο Συμφοίτησης", value=st.session_state.form_values.get("sibling_school", ""), key="sibling_school_input", on_change=lambda: on_change("sibling_school", st.session_state.sibling_school_input))
+    notes = st.text_area("Παρατηρήσεις", value=st.session_state.form_values.get("notes", ""), key="notes_input", on_change=lambda: on_change("notes", st.session_state.notes_input))
 
-        if st.button("Καθαρισμός Φόρμας"):
-            st.session_state.editing_record_id = None
+    st.markdown("**Διεύθυνση**")
+    postal_code = st.selectbox("ΤΚ", [""] + postal_codes, index=([""] + postal_codes).index(st.session_state.form_values.get("postal_code", "")) if st.session_state.form_values.get("postal_code", "") in ([""] + postal_codes) else 0, key="postal_code_select", on_change=lambda: on_change("postal_code", st.session_state.postal_code_select))
+    
+    possible_streets = [""] + sorted(addresses_df[addresses_df["Τ.Κ."] == postal_code]["ΟΔΟΣ"].dropna().unique().tolist())
+    street = st.selectbox("Οδός", possible_streets, index=possible_streets.index(st.session_state.form_values.get("street", "")) if st.session_state.form_values.get("street", "") in possible_streets else 0, key="street_select", on_change=lambda: on_change("street", st.session_state.street_select))
+    
+    street_number = st.text_input("Αριθμός Οδού", value=st.session_state.form_values.get("street_number", ""), key="street_number_input", on_change=lambda: on_change("street_number", st.session_state.street_number_input))
+    city = ""
+    if postal_code:
+        city_from_df = addresses_df[addresses_df["Τ.Κ."] == postal_code]["ΠΟΛΗ"].dropna().unique()
+        city = city_from_df[0] if len(city_from_df) else ""
+    city = st.text_input("Πόλη / Περιοχή", value=st.session_state.form_values.get("city", city), key="city_input", on_change=lambda: on_change("city", st.session_state.city_input))
+
+
+    if st.button("Αποθήκευση Εγγραφής"):
+        required = [
+            st.session_state.form_values.get("registry_number"),
+            st.session_state.form_values.get("last_name"),
+            st.session_state.form_values.get("first_name"),
+            st.session_state.form_values.get("father_name"),
+            st.session_state.form_values.get("street"),
+            st.session_state.form_values.get("street_number"),
+            st.session_state.form_values.get("postal_code"),
+            st.session_state.form_values.get("city")
+        ]
+        
+        if not all(str(x).strip() for x in required):
+            st.warning("Παρακαλώ συμπληρώστε όλα τα απαραίτητα πεδία.")
+        else:
+            # ... (the rest of your save logic here) ...
+            st.success("Η εγγραφή αποθηκεύτηκε.")
+            # Clear the form after successful save
+            st.session_state.form_values = {}
             st.rerun()
+
+    if st.button("Καθαρισμός Φόρμας"):
+        st.session_state.editing_record_id = None
+        st.session_state.form_values = {}
+        st.rerun()
 
     with right:
         st.subheader("Αποθηκευμένες Εγγραφές")

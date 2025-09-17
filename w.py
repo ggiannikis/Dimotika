@@ -160,7 +160,7 @@ def main_app():
     # Left: Form; Right: Records list
     left, right = st.columns([4,6])
 
-   with left:
+    with left:
     st.subheader("Φόρμα Εγγραφής")
 
     # Use session state to manage form inputs

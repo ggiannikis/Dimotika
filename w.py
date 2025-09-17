@@ -10,7 +10,7 @@ from io import BytesIO
 
 # ---------- Configuration ----------
 USERS_FILE = "users.json"            # contains users -> password_hash, file, school_code, school_name
-ADDRESSES_FILE = "addresses.xlsx"    # shared (same as your desktop app)
+ADDRESSES_FILE = "addresses.xlsm"    # shared (same as your desktop app)
 SCHOOLS_FILE = "schools.xlsx"        # optional, used for display
 # -----------------------------------
 

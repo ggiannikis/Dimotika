@@ -128,6 +128,8 @@ if "username" not in st.session_state:
     st.session_state.username = None
 if "editing_record_id" not in st.session_state:
     st.session_state.editing_record_id = None
+if "prefill" not in st.session_state:
+    st.session_state.prefill = {}
 
 def login_action(username, password):
     if verify_user(username, password):
@@ -135,6 +137,8 @@ def login_action(username, password):
         st.session_state.username = username
         st.session_state.editing_record_id = None
         st.success(f"Καλωσήρθες, {username}!")
+        # Rerun to clear form after login
+        st.experimental_rerun()
     else:
         st.error("Λανθασμένος χρήστης ή κωδικός.")
 
@@ -170,7 +174,7 @@ def main_app():
     student_file = student_file_for(username)
 
     # Header
-    col1, col2 = st.columns([8,1])
+    col1, col2 = st.columns([8, 1])
     with col1:
         st.title(f"Students — {school_name} ({school_code})")
         st.write(f"Logged in as **{username}**")
@@ -187,47 +191,87 @@ def main_app():
     postal_codes = sorted(addresses_df["Τ.Κ."].dropna().unique().tolist())
 
     # Left: Form; Right: Records list
-    left, right = st.columns([4,6])
-
+    left, right = st.columns([4, 6])
+    
     with left:
         st.subheader("Φόρμα Εγγραφής")
-        registry_number = st.text_input("Αρ. Μητρώου")
-        last_name = st.text_input("Επώνυμο")
-        first_name = st.text_input("Όνομα")
-        father_name = st.text_input("Όνομα Πατέρα")
-        sibling_school = st.text_input("Σχολείο Συμφοίτησης")
-        notes = st.text_area("Παρατηρήσεις", height=120)
 
-        st.markdown("**Διεύθυνση**")
+        # Refactored Form using st.form to prevent infinite loop
+        with st.form("entry_form", clear_on_submit=False):
+            # Prefill logic using st.session_state
+            prefill_rec = st.session_state.prefill
+            
+            registry_number = st.text_input("Αρ. Μητρώου", value=prefill_rec.get("registry_number", ""))
+            last_name = st.text_input("Επώνυμο", value=prefill_rec.get("last_name", ""))
+            first_name = st.text_input("Όνομα", value=prefill_rec.get("first_name", ""))
+            father_name = st.text_input("Όνομα Πατέρα", value=prefill_rec.get("father_name", ""))
+            sibling_school = st.text_input("Σχολείο Συμφοίτησης", value=prefill_rec.get("sibling_school", ""))
+            notes = st.text_area("Παρατηρήσεις", height=120, value=prefill_rec.get("notes", ""))
 
-        postal_code = st.selectbox("ΤΚ", [""] + postal_codes, index=0)
+            st.markdown("**Διεύθυνση**")
 
-        possible_streets = []
-        city_default = ""
-        if postal_code:
-            subset = addresses_df[addresses_df["Τ.Κ."] == postal_code]
-            possible_streets = sorted(subset["ΟΔΟΣ"].dropna().unique().tolist())
-            cities = subset["ΠΟΛΗ"].dropna().unique()
-            if len(cities):
-                city_default = cities[0]
+            # Handle postal code and related fields
+            postal_code_idx = 0
+            if prefill_rec.get("postal_code"):
+                try:
+                    postal_code_idx = [""] + postal_codes.index(prefill_rec["postal_code"]) + 1
+                except ValueError:
+                    pass
+            postal_code = st.selectbox("ΤΚ", [""] + postal_codes, index=postal_code_idx)
 
-        street = st.selectbox("Οδός", [""] + possible_streets, index=0)
-        street_number = st.text_input("Αριθμός Οδού")
-        city = st.text_input("Πόλη / Περιοχή", value=city_default)
+            possible_streets = []
+            city_default = prefill_rec.get("city", "")
+            if postal_code:
+                subset = addresses_df[addresses_df["Τ.Κ."] == postal_code]
+                possible_streets = sorted(subset["ΟΔΟΣ"].dropna().unique().tolist())
+                cities = subset["ΠΟΛΗ"].dropna().unique()
+                if len(cities) and not city_default:
+                    city_default = cities[0]
 
+            street_idx = 0
+            if prefill_rec.get("street") and prefill_rec["street"] in possible_streets:
+                street_idx = possible_streets.index(prefill_rec["street"]) + 1
 
-        if st.button("Αποθήκευση Εγγραφής"):
-            required = [registry_number, last_name, first_name, father_name, street, street_number, postal_code, city]
-            if not all(str(x).strip() for x in required):
-                st.warning("Παρακαλώ συμπληρώστε όλα τα απαραίτητα πεδία.")
-            else:
-                records = read_records(student_file)
-                if st.session_state.editing_record_id:
-                    rec_id = st.session_state.editing_record_id
-                    updated = False
-                    for i, rec in enumerate(records):
-                        if str(rec.get("id")) == str(rec_id):
-                            records[i] = {
+            street = st.selectbox("Οδός", [""] + possible_streets, index=street_idx)
+            street_number = st.text_input("Αριθμός Οδού", value=prefill_rec.get("street_number", ""))
+            city = st.text_input("Πόλη / Περιοχή", value=city_default)
+
+            submitted = st.form_submit_button("Αποθήκευση Εγγραφής")
+            
+            if submitted:
+                # The logic for saving/updating goes here
+                required = [registry_number, last_name, first_name, father_name, street, street_number, postal_code, city]
+                if not all(str(x).strip() for x in required):
+                    st.warning("Παρακαλώ συμπληρώστε όλα τα απαραίτητα πεδία.")
+                else:
+                    records = read_records(student_file)
+                    if st.session_state.editing_record_id:
+                        rec_id = st.session_state.editing_record_id
+                        updated = False
+                        for i, rec in enumerate(records):
+                            if str(rec.get("id")) == str(rec_id):
+                                records[i] = {
+                                    "id": rec_id,
+                                    "registry_number": registry_number.strip(),
+                                    "last_name": last_name.strip(),
+                                    "first_name": first_name.strip(),
+                                    "father_name": father_name.strip(),
+                                    "sibling_school": sibling_school.strip(),
+                                    "notes": notes.strip(),
+                                    "school": school_name,
+                                    "school_code": school_code,
+                                    "street": street.strip(),
+                                    "street_number": street_number.strip(),
+                                    "postal_code": postal_code.strip(),
+                                    "city": city.strip(),
+                                    "last_modified": datetime.now().isoformat()
+                                }
+                                updated = True
+                                break
+                        if not updated:
+                            st.warning("Η εγγραφή προς επεξεργασία δεν βρέθηκε. Θα δημιουργηθεί νέα.")
+                            rec_id = str(int(time.time()))
+                            records.append({
                                 "id": rec_id,
                                 "registry_number": registry_number.strip(),
                                 "last_name": last_name.strip(),
@@ -242,11 +286,9 @@ def main_app():
                                 "postal_code": postal_code.strip(),
                                 "city": city.strip(),
                                 "last_modified": datetime.now().isoformat()
-                            }
-                            updated = True
-                            break
-                    if not updated:
-                        st.warning("Η εγγραφή προς επεξεργασία δεν βρέθηκε. Θα δημιουργηθεί νέα.")
+                            })
+                        st.session_state.editing_record_id = None
+                    else:
                         rec_id = str(int(time.time()))
                         records.append({
                             "id": rec_id,
@@ -262,33 +304,16 @@ def main_app():
                             "street_number": street_number.strip(),
                             "postal_code": postal_code.strip(),
                             "city": city.strip(),
-                            "last_modified": datetime.now().isoformat()
+                            "created_at": datetime.now().isoformat()
                         })
-                    st.session_state.editing_record_id = None
-                else:
-                    rec_id = str(int(time.time()))
-                    records.append({
-                        "id": rec_id,
-                        "registry_number": registry_number.strip(),
-                        "last_name": last_name.strip(),
-                        "first_name": first_name.strip(),
-                        "father_name": father_name.strip(),
-                        "sibling_school": sibling_school.strip(),
-                        "notes": notes.strip(),
-                        "school": school_name,
-                        "school_code": school_code,
-                        "street": street.strip(),
-                        "street_number": street_number.strip(),
-                        "postal_code": postal_code.strip(),
-                        "city": city.strip(),
-                        "created_at": datetime.now().isoformat()
-                    })
-                write_records(student_file, records)
-                st.success("Η εγγραφή αποθηκεύτηκε.")
-                st.experimental_rerun()
+                    write_records(student_file, records)
+                    st.success("Η εγγραφή αποθηκεύτηκε.")
+                    st.session_state.prefill = {} # Clear prefill data
+                    st.experimental_rerun() # Rerun to show updated table
 
         if st.button("Καθαρισμός Φόρμας"):
             st.session_state.editing_record_id = None
+            st.session_state.prefill = {}
             st.experimental_rerun()
 
     with right:
@@ -334,17 +359,12 @@ def main_app():
                         st.session_state.pop("to_delete_id")
                         st.info("Η διαγραφή ακυρώθηκε.")
 
-            x1, x2 = st.columns([3,1])
+            x1, x2 = st.columns([3, 1])
             with x1:
                 if st.button("Εξαγωγή σε Excel"):
                     data = export_to_excel_bytes(records)
                     st.download_button("Κατέβασε Excel", data=data, file_name=f"{school_code}_{username}_students.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-    if st.session_state.get("prefill"):
-        rec = st.session_state.pop("prefill")
-        st.info("Η εγγραφή έχει φορτωθεί για επεξεργασία. Αντιγράψτε/επικολλήστε τα πεδία στο αριστερό έντυπο.")
-        st.json(rec)
-
+    
 # ---------- Entry ----------
 def app():
     st.sidebar.title("Navigation")

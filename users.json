@@ -1,13 +1,13 @@
 {
     "giannis": {
-      "password_hash": "2918468f753b4258fba15ebda1e33c67d6d154346e5ba40a38ff651d68c75c39",
-      "file": "giannis.json",
+      "password_hash": "12b59c39ed58ac40efe0dc99633e9427145e0da13054d3f588ac93eaf268857812918468f753b4258fba15ebda1e33c67d6d154346e5ba40a38ff651d68c75c39",
+      "file": "students_giannis.json",
       "school_code": "001ΚΑΛ",
-      "school_name": "1ο Δημοτικό Σχολείο Καλαμαριάς"
+      "school_name": "1ο Δημοτικό Καλαμαριάς"
     },
     "maria": {
-      "password_hash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd1c0b2f5e1a2f7b498",
-      "file": "maria.json",
+      "password_hash": "94aec9fbed989ece189a7e172c9cf41669050495152bc4c1dbf2a38d7fd85627",
+      "file": "students_maria.json",
       "school_code": "SCH002",
       "school_name": "2nd Primary School Thessaloniki"
     }

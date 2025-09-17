@@ -143,7 +143,7 @@ def logout_action():
     st.session_state.logged_in = False
     st.session_state.username = None
     st.session_state.editing_record_id = None
-    # No need for st.experimental_rerun() here. Streamlit will rerun automatically.
+    st.experimental_rerun()
 
 # ------------------ UI ------------------
 def show_login():
@@ -203,13 +203,15 @@ def main_app():
             notes = st.text_area("Παρατηρήσεις", height=120, value=prefill_rec.get("notes", ""), key="notes_input")
 
             st.markdown("**Διεύθυνση**")
-
-            # Corrected logic for address fields
-            postal_code_options = [""] + postal_codes
-            postal_code_idx = postal_code_options.index(prefill_rec.get("postal_code", "")) if prefill_rec.get("postal_code") in postal_code_options else 0
-            postal_code = st.selectbox("ΤΚ", postal_code_options, index=postal_code_idx, key="postal_code_selectbox")
             
             # --- Dynamically update street and city based on postal code selection ---
+            postal_code_options = [""] + postal_codes
+            postal_code_idx = postal_code_options.index(prefill_rec.get("postal_code", "")) if prefill_rec.get("postal_code") in postal_code_options else 0
+            
+            # Use st.selectbox with a unique key to manage state
+            postal_code = st.selectbox("ΤΚ", postal_code_options, index=postal_code_idx, key="postal_code_selectbox")
+            
+            # --- Dynamically populate street and city options ---
             possible_streets = []
             city_value = ""
             if postal_code:
@@ -221,6 +223,7 @@ def main_app():
 
             street_options = [""] + possible_streets
             street_idx = street_options.index(prefill_rec.get("street", "")) if prefill_rec.get("street") in street_options else 0
+            
             street = st.selectbox("Οδός", street_options, index=street_idx, key="street_selectbox")
             
             street_number = st.text_input("Αριθμός Οδού", value=prefill_rec.get("street_number", ""), key="street_number_input")
@@ -230,7 +233,6 @@ def main_app():
             submitted = st.form_submit_button("Αποθήκευση Εγγραφής")
 
             if submitted:
-                # The logic for saving/updating goes here
                 required = [registry_number, last_name, first_name, father_name, street, street_number, postal_code, city]
                 if not all(str(x).strip() for x in required):
                     st.warning("Παρακαλώ συμπληρώστε όλα τα απαραίτητα πεδία.")

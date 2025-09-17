@@ -16,10 +16,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Read-only bundled data dir (inside the repo)
 READONLY_DATA_DIR = os.path.join(BASE_DIR, "data")
 
-# Preferred writable directory (Streamlit Cloud allows writing to /tmp)
-TMP_DIR = "/tmp"
 # Use the specified writable directory for data storage
 WRITE_DATA_DIR = "/data"
+
 # App resources (read-only assets live next to the script)
 USERS_FILE = os.path.join(BASE_DIR, "users.json")            # contains users -> password_hash, file, school_code, school_name
 ADDRESSES_FILE = os.path.join(BASE_DIR, "addresses.xlsx")    # shared (same as your desktop app)
@@ -193,10 +192,7 @@ def main_app():
 
     with left:
         st.subheader("Φόρμα Εγγραφής")
-
-        # Refactored Form using st.form to prevent infinite loop
         with st.form("entry_form", clear_on_submit=False):
-            # Prefill logic using st.session_state
             prefill_rec = st.session_state.prefill
             
             registry_number = st.text_input("Αρ. Μητρώου", value=prefill_rec.get("registry_number", ""), key="registry_number_input")
@@ -207,34 +203,32 @@ def main_app():
             notes = st.text_area("Παρατηρήσεις", height=120, value=prefill_rec.get("notes", ""), key="notes_input")
 
             st.markdown("**Διεύθυνση**")
-            
-            # --- Address Filters with key for state management ---
+
+            # Corrected logic for address fields
             postal_code_options = [""] + postal_codes
             postal_code_idx = postal_code_options.index(prefill_rec.get("postal_code", "")) if prefill_rec.get("postal_code") in postal_code_options else 0
             postal_code = st.selectbox("ΤΚ", postal_code_options, index=postal_code_idx, key="postal_code_selectbox")
-
+            
+            # --- Dynamically update street and city based on postal code selection ---
             possible_streets = []
+            city_value = ""
             if postal_code:
                 subset = addresses_df[addresses_df["Τ.Κ."] == postal_code]
                 possible_streets = sorted(subset["ΟΔΟΣ"].dropna().unique().tolist())
-            
+                cities = subset["ΠΟΛΗ"].dropna().unique()
+                if len(cities):
+                    city_value = cities[0]
+
             street_options = [""] + possible_streets
             street_idx = street_options.index(prefill_rec.get("street", "")) if prefill_rec.get("street") in street_options else 0
             street = st.selectbox("Οδός", street_options, index=street_idx, key="street_selectbox")
             
             street_number = st.text_input("Αριθμός Οδού", value=prefill_rec.get("street_number", ""), key="street_number_input")
-            
-            city_default_value = ""
-            if postal_code:
-                cities = addresses_df[addresses_df["Τ.Κ."] == postal_code]["ΠΟΛΗ"].dropna().unique()
-                if len(cities):
-                    city_default_value = cities[0]
+            city = st.text_input("Πόλη / Περιοχή", value=prefill_rec.get("city", city_value), key="city_input")
+            # --- End of dynamic updates ---
 
-            city = st.text_input("Πόλη / Περιοχή", value=prefill_rec.get("city", city_default_value), key="city_input")
-            # --- End of Address Filters ---
-            
             submitted = st.form_submit_button("Αποθήκευση Εγγραφής")
-            
+
             if submitted:
                 # The logic for saving/updating goes here
                 required = [registry_number, last_name, first_name, father_name, street, street_number, postal_code, city]
@@ -306,7 +300,7 @@ def main_app():
                     write_records(student_file, records)
                     st.success("Η εγγραφή αποθηκεύτηκε.")
                     st.session_state.prefill = {}  # Clear prefill data
-                    st.experimental_rerun()  # Rerun to show updated table
+                    st.experimental_rerun()
 
         if st.button("Καθαρισμός Φόρμας"):
             st.session_state.editing_record_id = None

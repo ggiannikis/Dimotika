@@ -137,10 +137,9 @@ def login_action(username, password):
         st.session_state.username = username
         st.session_state.editing_record_id = None
         st.success(f"Καλωσήρθες, {username}!")
-        # Rerun is no longer needed here. The app will naturally reload and show the main app
-        # because st.session_state.logged_in is now True.
     else:
         st.error("Λανθασμένος χρήστης ή κωδικός.")
+
 def logout_action():
     st.session_state.logged_in = False
     st.session_state.username = None
@@ -191,7 +190,7 @@ def main_app():
 
     # Left: Form; Right: Records list
     left, right = st.columns([4, 6])
-    
+
     with left:
         st.subheader("Φόρμα Εγγραφής")
 
@@ -200,41 +199,40 @@ def main_app():
             # Prefill logic using st.session_state
             prefill_rec = st.session_state.prefill
             
-            registry_number = st.text_input("Αρ. Μητρώου", value=prefill_rec.get("registry_number", ""))
-            last_name = st.text_input("Επώνυμο", value=prefill_rec.get("last_name", ""))
-            first_name = st.text_input("Όνομα", value=prefill_rec.get("first_name", ""))
-            father_name = st.text_input("Όνομα Πατέρα", value=prefill_rec.get("father_name", ""))
-            sibling_school = st.text_input("Σχολείο Συμφοίτησης", value=prefill_rec.get("sibling_school", ""))
-            notes = st.text_area("Παρατηρήσεις", height=120, value=prefill_rec.get("notes", ""))
+            registry_number = st.text_input("Αρ. Μητρώου", value=prefill_rec.get("registry_number", ""), key="registry_number_input")
+            last_name = st.text_input("Επώνυμο", value=prefill_rec.get("last_name", ""), key="last_name_input")
+            first_name = st.text_input("Όνομα", value=prefill_rec.get("first_name", ""), key="first_name_input")
+            father_name = st.text_input("Όνομα Πατέρα", value=prefill_rec.get("father_name", ""), key="father_name_input")
+            sibling_school = st.text_input("Σχολείο Συμφοίτησης", value=prefill_rec.get("sibling_school", ""), key="sibling_school_input")
+            notes = st.text_area("Παρατηρήσεις", height=120, value=prefill_rec.get("notes", ""), key="notes_input")
 
             st.markdown("**Διεύθυνση**")
-
-            # Handle postal code and related fields
-            postal_code_idx = 0
-            if prefill_rec.get("postal_code"):
-                try:
-                    postal_code_idx = [""] + postal_codes.index(prefill_rec["postal_code"]) + 1
-                except ValueError:
-                    pass
-            postal_code = st.selectbox("ΤΚ", [""] + postal_codes, index=postal_code_idx)
+            
+            # --- Address Filters with key for state management ---
+            postal_code_options = [""] + postal_codes
+            postal_code_idx = postal_code_options.index(prefill_rec.get("postal_code", "")) if prefill_rec.get("postal_code") in postal_code_options else 0
+            postal_code = st.selectbox("ΤΚ", postal_code_options, index=postal_code_idx, key="postal_code_selectbox")
 
             possible_streets = []
-            city_default = prefill_rec.get("city", "")
             if postal_code:
                 subset = addresses_df[addresses_df["Τ.Κ."] == postal_code]
                 possible_streets = sorted(subset["ΟΔΟΣ"].dropna().unique().tolist())
-                cities = subset["ΠΟΛΗ"].dropna().unique()
-                if len(cities) and not city_default:
-                    city_default = cities[0]
+            
+            street_options = [""] + possible_streets
+            street_idx = street_options.index(prefill_rec.get("street", "")) if prefill_rec.get("street") in street_options else 0
+            street = st.selectbox("Οδός", street_options, index=street_idx, key="street_selectbox")
+            
+            street_number = st.text_input("Αριθμός Οδού", value=prefill_rec.get("street_number", ""), key="street_number_input")
+            
+            city_default_value = ""
+            if postal_code:
+                cities = addresses_df[addresses_df["Τ.Κ."] == postal_code]["ΠΟΛΗ"].dropna().unique()
+                if len(cities):
+                    city_default_value = cities[0]
 
-            street_idx = 0
-            if prefill_rec.get("street") and prefill_rec["street"] in possible_streets:
-                street_idx = possible_streets.index(prefill_rec["street"]) + 1
-
-            street = st.selectbox("Οδός", [""] + possible_streets, index=street_idx)
-            street_number = st.text_input("Αριθμός Οδού", value=prefill_rec.get("street_number", ""))
-            city = st.text_input("Πόλη / Περιοχή", value=city_default)
-
+            city = st.text_input("Πόλη / Περιοχή", value=prefill_rec.get("city", city_default_value), key="city_input")
+            # --- End of Address Filters ---
+            
             submitted = st.form_submit_button("Αποθήκευση Εγγραφής")
             
             if submitted:
@@ -307,8 +305,8 @@ def main_app():
                         })
                     write_records(student_file, records)
                     st.success("Η εγγραφή αποθηκεύτηκε.")
-                    st.session_state.prefill = {} # Clear prefill data
-                    st.experimental_rerun() # Rerun to show updated table
+                    st.session_state.prefill = {}  # Clear prefill data
+                    st.experimental_rerun()  # Rerun to show updated table
 
         if st.button("Καθαρισμός Φόρμας"):
             st.session_state.editing_record_id = None

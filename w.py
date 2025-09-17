@@ -143,7 +143,7 @@ def logout_action():
     st.session_state.logged_in = False
     st.session_state.username = None
     st.session_state.editing_record_id = None
-    st.experimental_rerun()
+    # No need for st.experimental_rerun() here. Streamlit will rerun automatically.
 
 # ------------------ UI ------------------
 def show_login():

@@ -107,7 +107,7 @@ def login_action(username, password):
         st.session_state.editing_record_id = None
         st.success(f"Καλωσήρθες, {username}!")
         time.sleep(1) # Gives the user a moment to see the message
-        st.experimental_rerun()
+        st.rerun()
     else:
         st.error("Λανθασμένος χρήστης ή κωδικός.")
 
@@ -115,7 +115,7 @@ def logout_action():
     st.session_state.logged_in = False
     st.session_state.username = None
     st.session_state.editing_record_id = None
-    st.experimental_rerun()
+    st.rerun()
 
 # ------------------ UI ------------------
 def show_login():
@@ -257,11 +257,11 @@ def main_app():
                 # Save
                 write_records(student_file, records)
                 st.success("Η εγγραφή αποθηκεύτηκε.")
-                st.experimental_rerun()
+                st.rerun()
 
         if st.button("Καθαρισμός Φόρμας"):
             st.session_state.editing_record_id = None
-            st.experimental_rerun()
+            st.rerun()
 
     with right:
         st.subheader("Αποθηκευμένες Εγγραφές")
@@ -294,13 +294,13 @@ def main_app():
                         # Set up a mechanism to prefill form fields via query params or rerun with temp storage.
                         # Simpler: write temp file or store in session_state
                         st.session_state.prefill = rec
-                        st.experimental_rerun()
+                        st.rerun()
                     if c2.button("Διαγραφή"):
                         if st.confirm("Είστε βέβαιοι ότι θέλετε να διαγράψετε την εγγραφή;"):
                             records = [r for r in records if str(r.get("id")) != str(rec_id)]
                             write_records(student_file, records)
                             st.success("Η εγγραφή διαγράφηκε.")
-                            st.experimental_rerun()
+                            st.rerun()
 
             # Export button
             x1, x2 = st.columns([3,1])

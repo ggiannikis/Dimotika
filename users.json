@@ -1,0 +1,15 @@
+{
+    "giannis": {
+      "password_hash": "e99a18c428cb38d5f260853678922e03abd833f6b7d0f4f3e4a9d3d4f7fb8f1e",
+      "file": "students_giannis.json",
+      "school_code": "SCH001",
+      "school_name": "1st Primary School Athens"
+    },
+    "maria": {
+      "password_hash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd1c0b2f5e1a2f7b498",
+      "file": "students_maria.json",
+      "school_code": "SCH002",
+      "school_name": "2nd Primary School Thessaloniki"
+    }
+  }
+  

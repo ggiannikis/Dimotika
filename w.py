@@ -7,12 +7,24 @@ import hashlib
 import time
 from datetime import datetime
 from io import BytesIO
+import shutil
 
-# ---------- Configuration ----------
-USERS_FILE = "users.json"            # contains users -> password_hash, file, school_code, school_name
-ADDRESSES_FILE = "addresses.xlsx"    # shared (same as your desktop app)
-SCHOOLS_FILE = "schools.xlsx"        # optional, used for display
-# -----------------------------------
+# ---------- Paths & Configuration ----------
+# Base directory of this file (read-only on Streamlit Cloud)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Read-only bundled data dir (inside the repo)
+READONLY_DATA_DIR = os.path.join(BASE_DIR, "data")
+
+# Preferred writable directory (Streamlit Cloud allows writing to /tmp)
+TMP_DIR = "/tmp"
+WRITE_DATA_DIR = os.path.join(TMP_DIR, "data") if os.access(TMP_DIR, os.W_OK) else READONLY_DATA_DIR
+
+# App resources (read-only assets live next to the script)
+USERS_FILE = os.path.join(BASE_DIR, "users.json")            # contains users -> password_hash, file, school_code, school_name
+ADDRESSES_FILE = os.path.join(BASE_DIR, "addresses.xlsx")    # shared (same as your desktop app)
+SCHOOLS_FILE = os.path.join(BASE_DIR, "schools.xlsx")        # optional, used for display
+# -------------------------------------------
 
 st.set_page_config(page_title="Student Registration (Web)", layout="wide")
 
@@ -45,8 +57,28 @@ def get_user_info(username):
 def student_file_for(username):
     info = get_user_info(username)
     filename = info.get("file", f"students_{username}.json") if info else f"students_{username}.json"
-    os.makedirs("data", exist_ok=True)
-    return os.path.join("data", filename)
+
+    # Ensure writable directory exists (prefer /tmp/data on Streamlit Cloud)
+    target_dir = WRITE_DATA_DIR
+    try:
+        os.makedirs(target_dir, exist_ok=True)
+    except Exception:
+        # Fallback to read-only repo data folder (reading only)
+        target_dir = READONLY_DATA_DIR
+
+    target_path = os.path.join(target_dir, filename)
+
+    # If target file does not exist yet but a bundled copy exists, copy it once
+    bundled_path = os.path.join(READONLY_DATA_DIR, filename)
+    try:
+        if not os.path.exists(target_path) and os.path.exists(bundled_path):
+            os.makedirs(os.path.dirname(target_path) or ".", exist_ok=True)
+            shutil.copyfile(bundled_path, target_path)
+    except Exception:
+        # Ignore copy issues; reading will still try target_path
+        pass
+
+    return target_path
 
 def read_records(filepath):
     records = []
@@ -142,6 +174,8 @@ def main_app():
     with col1:
         st.title(f"Students — {school_name} ({school_code})")
         st.write(f"Logged in as **{username}**")
+        # Show where the student data is stored (useful on Streamlit Cloud)
+        st.caption(f"Data file: {student_file}")
     with col2:
         if st.button("Logout"):
             logout_action()
